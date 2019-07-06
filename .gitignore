@@ -1,0 +1,7 @@
+/supervisord
+/log
+/pidfiles
+/storage
+*.pyc
+*.yarc
+/web/.secret_key
