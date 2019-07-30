@@ -31,15 +31,13 @@ class ADS(Signature):
     minimum = "2.0"
 
     def on_complete(self):
-        count = 0
         for filepath in self.get_files():
-            if re.match(USERDIR, filepath, re.IGNORECASE) and not re.match(
-                    USERDIR + r'AppData\\', filepath, re.IGNORECASE):
+            if re.match(USERDIR + r'.', filepath, re.IGNORECASE) and not re.match(
+                    USERDIR + r'AppData', filepath, re.IGNORECASE):
                 self.mark_ioc("file", filepath)
-                count += 1
 
         if self.has_marks():
-            self.description = self.description % count
+            self.description = self.description % len(self.marks)
             if self.has_marks(20):
                 self.severity = 5
             return True
