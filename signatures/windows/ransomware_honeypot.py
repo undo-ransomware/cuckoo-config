@@ -17,6 +17,7 @@ try:
     import re2 as re
 except ImportError:
     import re
+import math
 
 from lib.cuckoo.common.abstracts import Signature
 
@@ -38,7 +39,6 @@ class ADS(Signature):
 
         if self.has_marks():
             self.description = self.description % len(self.marks)
-            if self.has_marks(20):
-                self.severity = 5
+            self.severity = 1 + int(round(math.log(len(self.marks))))
             return True
         return False
