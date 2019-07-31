@@ -1,4 +1,4 @@
-# Copyright (C) 2012,2015 Claudio "nex" Guarnieri (@botherder), Optiv, Inc. (brad.spengler@optiv.com)
+# Copyright (C) 2019 Claudio "nex" Guarnieri (@botherder), Optiv, Inc. (brad.spengler@optiv.com), Matthias Fratz
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ from lib.cuckoo.common.abstracts import Signature
 
 USERDIR = r'^[A-Z]?:\\(Users|Documents and Settings)\\[^\\]+\\'
 
-class ADS(Signature):
+class RansomwareHoneypot(Signature):
     name = "ransomware_honeypot"
     description = "Interacts with %d of the ransomware victim files"
     severity = 3
