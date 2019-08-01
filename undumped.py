@@ -6,6 +6,9 @@ import subprocess
 from time import sleep
 from shutil import copy
 
+# start sector of the C: partition. needed for satana which destroys the partition table.
+STARTSECT = 206848
+
 def sudo(*args):
 	subprocess.check_call(['sudo'] + list(args))
 
@@ -64,10 +67,10 @@ for task in sys.argv[1:]:
 	
 	sudo('chown', 'matthias.matthias', img)
 	sudo('chmod', '0400', img)
-	sudo('qemu-nbd', '-c', '/dev/nbd0', img)
+	sudo('qemu-nbd', '-c', '/dev/nbd0', '-o', str(STARTSECT * 512), img)
 	sleep(1)
 	try:
-		sudo('mount', '-o', 'ro', '/dev/nbd0p2', '/mnt')
+		sudo('mount', '-o', 'ro', '/dev/nbd0', '/mnt')
 		try:
 			dump_missing(analysis, dumped)
 		except Exception as e:
