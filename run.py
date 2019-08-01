@@ -19,8 +19,8 @@ def clonedisk(task):
 	uuid = getline('VBoxManage list vms -l', 'SATA (0, 0): ',
 		'\{([0-9a-f-]{36})\}', verbose=False)
 	print 'rootdisk', uuid
-	clone = getline('VBoxManage clonemedium disk %s %s.vdi' % (uuid, task),
-		'Clone medium created ','UUID: ([0-9a-f-]{36})')
+	clone = getline('VBoxManage clonemedium disk %s temp-images/%s.vdi'
+		% (uuid, task), 'Clone medium created ','UUID: ([0-9a-f-]{36})')
 	print 'clone', clone
 	os.system('VBoxManage closemedium ' + clone)
 
@@ -33,10 +33,11 @@ def wait(task):
 		status = getline(
 			'psql cuckoo cuckoo -c "select status from tasks where id = %s" -qt'
 			% task, '', '(\S+)')
+		sys.stdout.write('\r' + status + '        ')
+		sys.stdout.flush()
 		if 'reported' in status:
+			sys.stdout.write('\n')
 			return
-		else:
-			print status
 		time.sleep(15)
 
 if len(sys.argv) != 4:
