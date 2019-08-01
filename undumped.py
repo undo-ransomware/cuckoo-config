@@ -26,7 +26,7 @@ with io.open('existing.md5', 'rb') as infile:
 		hash = line[0:32]
 		existing.add(hash)
 
-def copy_missing(analysis, dumped):
+def dump_missing(analysis, dumped):
 	undumped = analysis + 'undumped/'
 	logfile = analysis + 'undumped.json'
 	sudo('mkdir', '-p', undumped)
@@ -41,7 +41,7 @@ def copy_missing(analysis, dumped):
 			file = line[34:].rstrip()
 			if hash not in existing and hash not in dumped and not file.startswith('/mnt/Users/cuckoo/AppData'):
 				path = 'C:\\' + file[5:].replace('/', '\\')
-				name = hash + '_' + file.split('/')[-1][-60:]
+				name = hash + '_' + file.decode('utf-8').split('/')[-1][-60:]
 				copy(file, undumped + name)
 				info = { 'path': 'undumped/' + name, 'pids': [], 'filepath': path }
 				json.dump(info, log)
@@ -55,6 +55,7 @@ for task in sys.argv[1:]:
 	if not os.path.isfile(img):
 		sys.stderr.write('no image for task %s\n' % task)
 		continue
+	print 'task', task
 	
 	dumped = set()
 	for line in popen(dumped_files):
@@ -62,19 +63,23 @@ for task in sys.argv[1:]:
 		dumped.add(hash)
 	
 	sudo('chown', 'matthias.matthias', img)
-	sudo('chmod', '0600', img)
+	sudo('chmod', '0400', img)
 	sudo('qemu-nbd', '-c', '/dev/nbd0', img)
 	sleep(1)
 	try:
 		sudo('mount', '-o', 'ro', '/dev/nbd0p2', '/mnt')
 		try:
-			copy_missing(analysis, dumped)
+			dump_missing(analysis, dumped)
 		except Exception as e:
 			print e
-			sudo('fuser', '-mvk', '/mnt')
+			try:
+				sudo('fuser', '-mvk', '/mnt')
+			finally:
+				raise
 		finally:
 			sudo('umount', '/mnt')
 	except Exception as e:
 		print e
+		raise
 	finally:
 		sudo('qemu-nbd', '-d', '/dev/nbd0')
