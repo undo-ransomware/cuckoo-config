@@ -35,7 +35,7 @@ def wait(task):
 			% task, '', '(\S+)')
 		sys.stdout.write('\r' + status + '        ')
 		sys.stdout.flush()
-		if 'reported' in status:
+		if 'completed' in status:
 			sys.stdout.write('\n')
 			return
 		time.sleep(15)
