@@ -54,7 +54,9 @@ def dump_missing(analysis, dumped):
 				path = 'undumped/' + hash + '_' + file.decode('utf-8').split('/')[-1][-60:]
 				copy(file, analysis + path)
 				dumped[hash] = path
-			info = { 'path': path, 'md5': hash, 'filepath': filepath }
+			stat = os.stat(file)
+			info = { 'path': path, 'md5': hash, 'filepath': filepath,
+					'mtime': stat.st_mtime, 'ctime': stat.st_ctime }
 			json.dump(info, log)
 			log.write('\n')
 
