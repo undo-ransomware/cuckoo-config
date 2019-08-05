@@ -42,28 +42,37 @@ def dump_missing(analysis, dumped):
 		for line in popen('find /mnt/Users/cuckoo -type f -print0 | xargs -0 md5sum'):
 			hash = line[0:32]
 			file = line[34:].rstrip()
-			if hash not in existing and hash not in dumped and not file.startswith('/mnt/Users/cuckoo/AppData'):
-				path = 'C:\\' + file[5:].replace('/', '\\')
-				name = hash + '_' + file.decode('utf-8').split('/')[-1][-60:]
-				copy(file, undumped + name)
-				info = { 'path': 'undumped/' + name, 'pids': [], 'filepath': path }
-				json.dump(info, log)
-				log.write('\n')
+			if file.startswith('/mnt/Users/cuckoo/AppData'):
+				continue
+
+			filepath = 'C:\\' + file[5:].replace('/', '\\')
+			if hash in existing:
+				path = None
+			elif hash in dumped:
+				path = dumped[hash]
+			else:
+				path = 'undumped/' + hash + '_' + file.decode('utf-8').split('/')[-1][-60:]
+				copy(file, analysis + path)
+				dumped[hash] = path
+			info = { 'path': path, 'md5': hash, 'filepath': filepath }
+			json.dump(info, log)
+			log.write('\n')
 
 for task in sys.argv[1:]:
 	img = '/home/cuckoo/sandbox/temp-images/%s.vdi' % task
 	analysis = '/home/cuckoo/sandbox/storage/analyses/%s/' % task
-	dumped_files = 'find %s/files -type f -print0 | xargs -0 md5sum' % analysis
+	dumped_files = 'cd %s && find files -type f -print0 | xargs -0 md5sum' % analysis
 
 	if not os.path.isfile(img):
 		sys.stderr.write('no image for task %s\n' % task)
 		continue
 	print 'task', task
 	
-	dumped = set()
+	dumped = dict()
 	for line in popen(dumped_files):
 		hash = line[0:32]
-		dumped.add(hash)
+		file = line[34:].rstrip()
+		dumped[hash] = file
 	
 	sudo('chown', 'matthias.matthias', img)
 	sudo('chmod', '0400', img)
