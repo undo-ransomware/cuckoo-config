@@ -5,6 +5,8 @@ import json
 import subprocess
 from time import sleep
 from shutil import copy
+from xattr import getxattr
+from binascii import hexlify
 
 # start sector of the C: partition. needed for satana which destroys the partition table.
 STARTSECT = 206848
@@ -54,9 +56,9 @@ def dump_missing(analysis, dumped):
 				path = 'undumped/' + hash + '_' + file.decode('utf-8').split('/')[-1][-60:]
 				copy(file, analysis + path)
 				dumped[hash] = path
-			stat = os.stat(file)
-			info = { 'path': path, 'md5': hash, 'filepath': filepath,
-					'mtime': stat.st_mtime, 'ctime': stat.st_ctime }
+			# see https://www.tuxera.com/community/ntfs-3g-advanced/extended-attributes/
+			times = hexlify(getxattr(file, 'system.ntfs_times_be'))
+			info = { 'path': path, 'md5': hash, 'filepath': filepath, 'times': times }
 			json.dump(info, log)
 			log.write('\n')
 
