@@ -27,23 +27,9 @@ def clonedisk(task):
 			'Clone medium created ','UUID: ([0-9a-f-]{36})')
 	print 'clone', clone
 	system('VBoxManage closemedium %s' % clone)
-	# this convoluted method creates a compressed image as a diff of a base
-	# image called base.qcow2, which must exist. it's usually worth it though:
-	# this turns 9GB full-disk images into ~800MB diffs that can be mounted
-	# using qemu-nbd!
-	full = '%s-full.qcow2' % task
-	sparse = '%s-sparse.qcow2' % task
-	compressed = '%s.qcow2' % task
-	system('qemu-img convert -p -O qcow2 %s temp-images/%s' % (vdi, full))
-	os.remove(vdi)
-	system('qemu-img create -q -f qcow2 -F qcow2 -b %s temp-images/%s'
-			% (full, sparse))
-	system('cd temp-images && qemu-img rebase -p -f qcow2 -F qcow2 ' +
-			'-b base.qcow2 %s' % sparse)
-	os.remove('temp-images/' + full)
-	system('qemu-img convert -p -c -f qcow2 -O qcow2 -B base.qcow2 ' +
-			'temp-images/%s temp-images/%s' % (sparse, compressed))
-	os.remove('temp-images/' + sparse)
+	# run image compression in background, with idle IO priority to minimize
+	# the impact on the next analysis task.
+	system('ionice -c3 python compress-image.py %s &' % task)
 
 def submit(path, timeout, route):
 	return getline('cuckoo submit --package exe --timeout %s -o route=%s "%s"'
