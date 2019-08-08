@@ -63,8 +63,8 @@ def dump_missing(analysis, dumped):
 			log.write('\n')
 
 for task in sys.argv[1:]:
-	img = '/home/cuckoo/sandbox/temp-images/%s.vdi' % task
 	analysis = '/home/cuckoo/sandbox/storage/analyses/%s/' % task
+	img = analysis + 'disk.qcow2'
 	dumped_files = 'cd %s && find files -type f -print0 | xargs -0 md5sum' % analysis
 
 	if not os.path.isfile(img):
@@ -79,8 +79,8 @@ for task in sys.argv[1:]:
 		dumped[hash] = file
 	
 	sudo('chown', 'matthias.matthias', img)
-	sudo('chmod', '0400', img)
-	sudo('qemu-nbd', '-c', '/dev/nbd0', '-o', str(STARTSECT * 512), img)
+	sudo('chmod', '0444', img)
+	sudo('qemu-nbd', '-r', '-c', '/dev/nbd0', '-o', str(STARTSECT * 512), img)
 	sleep(1)
 	try:
 		sudo('mount', '-o', 'ro', '/dev/nbd0', '/mnt')
