@@ -22,14 +22,14 @@ def clonedisk(task):
 	uuid = getline('VBoxManage list vms -l', 'SATA (0, 0): ',
 		'\{([0-9a-f-]{36})\}', verbose=False)
 	print 'rootdisk', uuid
-	vdi = 'temp-images/%s-full.vdi' % task
+	vdi = 'disk-%s.vdi' % task
 	clone = getline('VBoxManage clonemedium disk %s %s' % (uuid, vdi),
 			'Clone medium created ','UUID: ([0-9a-f-]{36})')
 	print 'clone', clone
 	system('VBoxManage closemedium %s' % clone)
 	# run image compression in background, with idle IO priority to minimize
 	# the impact on the next analysis task.
-	system('ionice -c3 python compress-image.py %s &' % task)
+	system('ionice -c3 sh compress-image.sh %s &' % task)
 
 def submit(path, timeout, route):
 	return getline('cuckoo submit --package exe --timeout %s -o route=%s "%s"'
