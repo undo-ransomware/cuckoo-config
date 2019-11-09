@@ -1,0 +1,19 @@
+[Unit]
+Description=Run supervisord for cuckoo sandbox
+After=syslog.target network.target vboxnet.service
+Before=uwsgi.service
+
+[Service]
+Type=forking
+ExecStart=/usr/local/bin/supervisord -c /usr/local/etc/supervisord.conf
+PIDFile=/run/cuckoo-supervisord.pid
+WorkingDirectory=/home/cuckoo/sandbox
+Environment=HOME=/home/cuckoo
+User=root
+Group=root
+Restart=always
+RestartSec=60s
+
+[Install]
+WantedBy=multi-user.target
+RequiredBy=uwsgi.service

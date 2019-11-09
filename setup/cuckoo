@@ -1,0 +1,5 @@
+#!/opt/cuckoo/venv/bin/python
+import sys
+sys.path.insert(0, '/opt/cuckoo/sandbox')
+from cuckoo.main import main
+sys.exit(main())

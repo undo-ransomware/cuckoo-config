@@ -1,0 +1,56 @@
+*filter
+:ufw-user-input - [0:0]
+:ufw-user-output - [0:0]
+:ufw-user-forward - [0:0]
+:ufw-before-logging-input - [0:0]
+:ufw-before-logging-output - [0:0]
+:ufw-before-logging-forward - [0:0]
+:ufw-user-logging-input - [0:0]
+:ufw-user-logging-output - [0:0]
+:ufw-user-logging-forward - [0:0]
+:ufw-after-logging-input - [0:0]
+:ufw-after-logging-output - [0:0]
+:ufw-after-logging-forward - [0:0]
+:ufw-logging-deny - [0:0]
+:ufw-logging-allow - [0:0]
+:ufw-user-limit - [0:0]
+:ufw-user-limit-accept - [0:0]
+### RULES ###
+
+### tuple ### allow tcp 22 0.0.0.0/0 any 0.0.0.0/0 in
+-A ufw-user-input -p tcp --dport 22 -j ACCEPT
+
+### tuple ### allow tcp 80 0.0.0.0/0 any 0.0.0.0/0 in
+-A ufw-user-input -p tcp --dport 80 -j ACCEPT
+
+### tuple ### allow tcp 443 0.0.0.0/0 any 0.0.0.0/0 in
+-A ufw-user-input -p tcp --dport 443 -j ACCEPT
+
+### tuple ### allow tcp 8443 0.0.0.0/0 any 0.0.0.0/0 in
+-A ufw-user-input -p tcp --dport 8443 -j ACCEPT
+
+### tuple ### allow tcp 2042 192.168.56.1 any 0.0.0.0/0 in_vboxnet0
+-A ufw-user-input -i vboxnet0 -p tcp -d 192.168.56.1 --dport 2042 -j ACCEPT
+
+### tuple ### route:allow tcp 80 0.0.0.0/0 any 0.0.0.0/0 in_vboxnet0
+-A ufw-user-forward -i vboxnet0 -p tcp --dport 80 -j ACCEPT
+
+### tuple ### route:allow tcp 443 0.0.0.0/0 any 0.0.0.0/0 in_vboxnet0
+-A ufw-user-forward -i vboxnet0 -p tcp --dport 443 -j ACCEPT
+
+### tuple ### route:allow udp 53 0.0.0.0/0 any 0.0.0.0/0 in_vboxnet0
+-A ufw-user-forward -i vboxnet0 -p udp --dport 53 -j ACCEPT
+
+### END RULES ###
+
+### LOGGING ###
+-I ufw-user-logging-input -j RETURN
+-I ufw-user-logging-output -j RETURN
+-I ufw-user-logging-forward -j RETURN
+### END LOGGING ###
+
+### RATE LIMITING ###
+-A ufw-user-limit -j REJECT
+-A ufw-user-limit-accept -j ACCEPT
+### END RATE LIMITING ###
+COMMIT
