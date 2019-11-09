@@ -72,6 +72,15 @@ give more control over versions, paths and permissions.
   `qemu-img convert -c -O qcow2 base.vdi /home/cuckoo/sandbox/storage/analyses/base.qcow2`.
   Take good care of that file, ie. back it up somewhere safe – all disk images
   are useless without it!
+- Setup the `undumped.py` tool: Mount the base image to `/mnt` using
+  `sudo qemu-nbd -r -c /dev/nbd0 base.qcow2` and
+  `sudo mount -o ro /dev/nbd0p2 /mnt`, then create the filelist using
+  `find /mnt -type f -print0 | xargs -0 md5sum >/home/cuckoo/sandbox/storage/analyses/existing.md5`.
+  Use `fdisk -l /dev/nbd0` to determine the offset of the Windows root
+  partition (usually second) and adjust `STARTSECT` in `undumped.py` if it
+  isn't 404 sectors (ugly but some samples ruin the partition table).
+  `umount /mnt` and release the device using `qemu-nbd -d /dev/nbd0` (else
+  `undumped.py` will crash because the device is busy).
 
 # Usage
 

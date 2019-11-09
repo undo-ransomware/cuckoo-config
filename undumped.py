@@ -8,8 +8,9 @@ from shutil import copy
 from xattr import getxattr
 from binascii import hexlify
 
+ANALYSES = '/home/cuckoo/sandbox/storage/analyses/'
 # start sector of the C: partition. needed for satana which destroys the partition table.
-STARTSECT = 206848
+STARTSECT = 404 * 512
 
 def sudo(*args):
 	subprocess.check_call(['sudo'] + list(args))
@@ -20,13 +21,13 @@ def popen(cmd):
 if len(sys.argv) < 2:
 	sys.stderr.write('usage: python unpack-vdi.py task-id...\n')
 	sys.exit(1)
-if not os.path.isfile('existing.md5'):
+if not os.path.isfile(ANALYSES + 'existing.md5'):
 	sys.stderr.write('generate existing.md5 by mounting the unmodified VDI and doing:\n')
-	sys.stderr.write('  find /mnt -type f -print0 | xargs -0 md5sum >existing.md5\n')
+	sys.stderr.write('  find /mnt -type f -print0 | xargs -0 md5sum >%sexisting.md5\n' % ANALYSES)
 	sys.exit(1)
 
 existing = set()
-with io.open('existing.md5', 'rb') as infile:
+with io.open(ANALYSES + 'existing.md5', 'rb') as infile:
 	for line in infile:
 		hash = line[0:32]
 		existing.add(hash)
@@ -63,7 +64,7 @@ def dump_missing(analysis, dumped):
 			log.write('\n')
 
 for task in sys.argv[1:]:
-	analysis = '/home/cuckoo/sandbox/storage/analyses/%s/' % task
+	analysis = '%s%s/' % (ANALYSES, task)
 	img = analysis + 'disk.qcow2'
 	dumped_files = 'cd %s && find files -type f -print0 | xargs -0 md5sum' % analysis
 
