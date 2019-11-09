@@ -37,6 +37,9 @@ give more control over versions, paths and permissions.
   Cuckoo 2.0.7 restriction; it doesn't work on Python 3 yet. Install the
   requirements (`pip install -r requirements.txt`) into this virtualenv. Make
   sure the virtualenv isn't writeable to the `cuckoo` user for security.
+- Checkout the Cuckoo repo (ie. out slightly modified version) into
+  `/opt/cuckoo/sandbox`. Again make sure it isn't writeable by the `cuckoo`
+  user.
 - Copy `setup/cuckoo` to `/usr/local/bin/cuckoo` (or symlink it). This
   provides the `cuckoo` command that Cuckoo would normally provide, but with
   all libraries from paths that the `cuckoo` user cannot write.
