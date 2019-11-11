@@ -26,6 +26,11 @@ full isolation, but we're doing it anyway for an additional layer of security.
 It also basically does all the steps from Cuckoo's `setup.py` manually, to
 give more control over versions, paths and permissions.
 
+Our setup used Ubuntu 18.04.3 on a physical server. Newer Ubuntu version
+should work, the issue being Python 2.7 for Cuckoo. Cuckoo uses VirtualBox,
+so a virtual server would both need to support nesting VirtualBox and show
+reasonable performance at that.
+
 - Checkout this repo into `/opt/cuckoo/utils`. It is needed there to run the
   `undumped.py` tool, which runs commands as root and thus must not be
   writeable by the `cuckoo` user.
@@ -37,7 +42,7 @@ give more control over versions, paths and permissions.
   Cuckoo 2.0.7 restriction; it doesn't work on Python 3 yet. Install the
   requirements (`pip install -r requirements.txt`) into this virtualenv. Make
   sure the virtualenv isn't writeable to the `cuckoo` user for security.
-- Checkout the Cuckoo repo (ie. out slightly modified version) into
+- Checkout the Cuckoo repo (ie. our slightly modified version) into
   `/opt/cuckoo/sandbox`. Again make sure it isn't writeable by the `cuckoo`
   user.
 - Copy `setup/cuckoo` to `/usr/local/bin/cuckoo` (or symlink it). This
@@ -64,7 +69,7 @@ give more control over versions, paths and permissions.
   which permit web ports and DNS unless overridden by Cuckoo Rooter. The point
   here is that `none` routing doesn't override them, so `none` means "Web".
   (Note: This overriding behavior of all other rules is one of our custom
-  changes to cuckoo!)
+  changes to cuckoo!) Start ufw (`sudo ufw sart`).
 - As user `cuckoo`, create a reference snapshot of the VM's disk before
   analysis: Determine the disk (not VM!) UUID from `VBoxManage list vms -l`.
   Dump it as a flat image using `VBoxManage clonemedium disk $uuid base.vdi`
@@ -81,6 +86,12 @@ give more control over versions, paths and permissions.
   isn't 404 sectors (ugly but some samples ruin the partition table).
   `umount /mnt` and release the device using `qemu-nbd -d /dev/nbd0` (else
   `undumped.py` will crash because the device is busy).
+- Install and configure the web interface. This is documented in the cuckoo
+  docs, but use the `setup/cuckoo-*.ini` config files for correct paths. Make
+  sure to front uwsgi with an Apache or NginX doing SSL termination and
+  password authentication, and restrict all services to listening on localhost
+  only. In particular, set `bind_ip = 127.0.0.1` in `/etc/mongodb.conf` and
+  `network.host: 127.0.0.1` in `/etc/elasticsearch/elasticsearch.yml`.
 
 # Usage
 
@@ -107,20 +118,20 @@ servers even when given network access. That notably includes samples from
 families which are documented to upload the key to a remote service... Which
 either still have a local copy allowing recovery without payment, or remove
 the key entirely making recovery impossible even after payment (it's almost
-certeinly the latter). Bottom line: Using only `drop` won't lose much.
+certainly the latter). Bottom line: Using only `drop` won't lose much.
 
 Wait for image creation and compression, as well as report generation to
 finish (this waiting is a non-issue when batch-running samples overnight).
 If the report indicates that the sample did something, or the disk image is
 suspiciously large (60-80MB is typical for a dud, so anything beyond 100MB is
 very suspicious), extract the encrypted victim files using the `undumped.py`
-tool (where `$id` is the analysis ID as show in the report):
+tool (where `$id` is the analysis ID as shown in the report):
 
 ```
 python /opt/cuckoo/utils/undumped.py $id
 ```
 
-Watch out for IO errors. Cuckoo does just pull the plug on the VM after
+*Watch out for IO errors!* Cuckoo does just pull the plug on the VM after
 analysis, so the filesystem can be corrupt. If the victim files are affected,
 re-run the analysis with a longer timeout. `undumped.py` generates
 `/home/cuckoo/sandbox/storage/analyses/$id/undumped.json`, listing all files
