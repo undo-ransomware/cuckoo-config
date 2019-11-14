@@ -32,8 +32,8 @@ so a virtual server would both need to support nesting VirtualBox and show
 reasonable performance at that.
 
 - Checkout this repo into `/opt/cuckoo/utils`. It is needed there to run the
-  `undumped.py` tool, which runs commands as root and thus must not be
-  writeable by the `cuckoo` user.
+  `dump.py` tool, which runs commands as root and thus must not be writeable
+  by the `cuckoo` user.
 - Install required packages for Cuckoo and the VM image handler. Image
   handling needs the `qemu-img` and `qemu-nbd` commands, the `psql` PostgreSQL
   commandline client, and NTFS3G (ie. `mount.ntfs`). See `setup/packages.md`
@@ -77,15 +77,17 @@ reasonable performance at that.
   `qemu-img convert -c -O qcow2 base.vdi /home/cuckoo/sandbox/storage/analyses/base.qcow2`.
   Take good care of that file, ie. back it up somewhere safe – all disk images
   are useless without it!
-- Setup the `undumped.py` tool: Mount the base image to `/mnt` using
-  `sudo qemu-nbd -r -c /dev/nbd0 base.qcow2` and
-  `sudo mount -o ro /dev/nbd0p2 /mnt`, then create the filelist using
-  `find /mnt -type f -print0 | xargs -0 md5sum >/home/cuckoo/sandbox/storage/analyses/existing.md5`.
-  Use `fdisk -l /dev/nbd0` to determine the offset of the Windows root
-  partition (usually second) and adjust `STARTSECT` in `undumped.py` if it
-  isn't 404 sectors (ugly but some samples ruin the partition table).
-  `umount /mnt` and release the device using `qemu-nbd -d /dev/nbd0` (else
-  `undumped.py` will crash because the device is busy).
+- Setup the `dump.py` tool: Mount the base image using
+  `sudo qemu-nbd -r -c /dev/nbd0 /home/cuckoo/sandbox/storage/analyses/base.qcow2`,
+  then use `fdisk -l /dev/nbd0` to determine the offset of the Windows root
+  partition (usually second) and adjust `STARTSECT` in `dump.py` if it isn't
+  206848 sectors (ugly but some samples ruin the partition table). Release the
+  device using `qemu-nbd -d /dev/nbd0` else `dump.py` will crash with an
+  unhelpful `Failed to set NBD socket`.
+- Generate `base.json` by running `python /opt/cuckoo/utils/dump.py --base`.
+  Observe lack of crash, proving your partition offset is correct and you
+  didn't forget to close the device. The script does take a while, though,
+  before it prints `/dev/nbd0 disconnected`.
 - Install and configure the web interface. This is documented in the cuckoo
   docs, but use the `setup/cuckoo-*.ini` config files for correct paths. Make
   sure to front uwsgi with an Apache or NginX doing SSL termination and
@@ -124,19 +126,19 @@ Wait for image creation and compression, as well as report generation to
 finish (this waiting is a non-issue when batch-running samples overnight).
 If the report indicates that the sample did something, or the disk image is
 suspiciously large (60-80MB is typical for a dud, so anything beyond 100MB is
-very suspicious), extract the encrypted victim files using the `undumped.py`
-tool (where `$id` is the analysis ID as shown in the report):
+very suspicious), extract the encrypted victim files using the `dump.py` tool
+(where `$id` is the analysis ID as shown in the report):
 
 ```
-python /opt/cuckoo/utils/undumped.py $id
+python /opt/cuckoo/utils/dump.py $id
 ```
 
 *Watch out for IO errors!* Cuckoo does just pull the plug on the VM after
 analysis, so the filesystem can be corrupt. If the victim files are affected,
-re-run the analysis with a longer timeout. `undumped.py` generates
-`/home/cuckoo/sandbox/storage/analyses/$id/undumped.json`, listing all files
+re-run the analysis with a longer timeout. `dump.py` generates
+`/home/cuckoo/sandbox/storage/analyses/$id/disk.json`, listing all files
 found in the image after analysis. Those not dumped by Cuckoo will be in
-`/home/cuckoo/sandbox/storage/analyses/$id/undumped`.
+`/home/cuckoo/sandbox/storage/analyses/$id/disk`.
 
 # Acknowledgements
 
